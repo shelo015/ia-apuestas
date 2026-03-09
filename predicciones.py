@@ -121,7 +121,7 @@ print(best)
 
 import requests
 
-TOKEN = "8752521307:AAFvIi2jsCSAYZkD3emgigAcehefC0R9pQU"
+TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
 CHAT_ID = "7049565102"
 
 mensaje = "⚽ IA Apuestas ejecutada correctamente!"
