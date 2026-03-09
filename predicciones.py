@@ -128,7 +128,10 @@ mensaje = "⚽ IA Apuestas ejecutada correctamente!"
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-requests.post(url, data={
-    "chat_id": 7049565102,
-    "text": mensaje
-})
+requests.post(
+    url,
+    data={
+        "chat_id": CHAT_ID,
+        "text": mensaje
+    }
+)
