@@ -118,3 +118,17 @@ best=df.sort_values("Value Local",ascending=False).head(3)
 print("\nTOP 3 VALUE BETS\n")
 
 print(best)
+
+import requests
+
+TOKEN = "8752521307:AAFvIi2jsCSAYZkD3emgigAcehefC0R9pQU"
+CHAT_ID = "7049565102"
+
+mensaje = "⚽ IA Apuestas ejecutada correctamente!"
+
+url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+
+requests.post(url, data={
+    "chat_id": 7049565102,
+    "text": mensaje
+})
