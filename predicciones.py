@@ -124,7 +124,25 @@ import requests
 TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
 CHAT_ID = "7049565102"
 
-mensaje = "⚽ IA Apuestas ejecutada correctamente!"
+# API gratuita de partidos
+url_partidos = "https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id=4328"
+
+r = requests.get(url_partidos)
+data = r.json()
+
+partidos = data["events"][:3]
+
+mensaje = "⚽ MEJORES APUESTAS DEL DIA\n\n"
+
+for i, p in enumerate(partidos, 1):
+    
+    local = p["strHomeTeam"]
+    visita = p["strAwayTeam"]
+    fecha = p["dateEvent"]
+
+    mensaje += f"{i}️⃣ {local} vs {visita}\n"
+    mensaje += f"Fecha: {fecha}\n"
+    mensaje += "Apuesta recomendada: Más de 1.5 goles\n\n"
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
