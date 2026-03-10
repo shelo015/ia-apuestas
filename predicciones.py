@@ -1,18 +1,9 @@
-print("PRUEBA NUEVA IA FUNCIONANDO")
 import requests
 
 TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
 CHAT_ID = "7049565102"
 
-mensaje = """
-⚽ PRUEBA IA
-
-Liverpool vs Tottenham
-Liverpool 60% de ganar
-Tottenham 30% de ganar
-Empate 10%
-Over 1.5 goles
-"""
+mensaje = "PRUEBA NUEVA IA 123456"
 
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
