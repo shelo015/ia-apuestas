@@ -1,3 +1,4 @@
+print("PRUEBA NUEVA IA FUNCIONANDO")
 import requests
 
 TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
