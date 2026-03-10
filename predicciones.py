@@ -4,46 +4,27 @@ import random
 TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
 CHAT_ID = "7049565102"
 
-# Ligas grandes (IDs de TheSportsDB)
-LEAGUES = [
-    4328,  # Premier League
-    4335,  # La Liga
-    4332,  # Serie A
-    4331,  # Bundesliga
-    4334   # Ligue 1
-]
+ligas = [4328, 4335, 4332, 4331, 4334]
 
 partidos = []
 
-# Obtener partidos próximos de varias ligas
-for league_id in LEAGUES:
-    try:
-        url = f"https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id={league_id}"
-        r = requests.get(url, timeout=10)
-        data = r.json()
+for liga in ligas:
+    url = f"https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id={liga}"
+    r = requests.get(url)
+    data = r.json()
 
-        if data and data.get("events"):
-            for p in data["events"]:
-                partidos.append({
-                    "local": p["strHomeTeam"],
-                    "visita": p["strAwayTeam"]
-                })
-    except:
-        pass
+    if data["events"]:
+        for p in data["events"]:
+            partidos.append((p["strHomeTeam"], p["strAwayTeam"]))
 
-# Limitar a 10 partidos
 partidos = partidos[:10]
 
 mensaje = "⚽ ANALISIS DE PARTIDOS\n\n"
 
-for p in partidos:
+for local, visita in partidos:
 
-    local = p["local"]
-    visita = p["visita"]
-
-    # Probabilidades simples
-    local_prob = random.randint(40, 65)
-    visita_prob = random.randint(15, 35)
+    local_prob = random.randint(40,65)
+    visita_prob = random.randint(20,35)
     empate_prob = 100 - (local_prob + visita_prob)
 
     mensaje += f"{local} vs {visita}\n"
@@ -52,13 +33,9 @@ for p in partidos:
     mensaje += f"Empate {empate_prob}%\n"
     mensaje += "Over 1.5 goles\n\n"
 
-# Enviar mensaje a Telegram
 url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
 
-requests.post(
-    url,
-    data={
-        "chat_id": CHAT_ID,
-        "text": mensaje
-    }
-)
+requests.post(url, data={
+    "chat_id": CHAT_ID,
+    "text": mensaje
+})
