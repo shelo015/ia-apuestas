@@ -2,25 +2,24 @@ name: IA Apuestas
 
 on:
   schedule:
-    - cron: '0 9 * * *'
+    - cron: "0 12 * * *"
+  workflow_dispatch:
 
 jobs:
-  run-script:
+  ejecutar:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar repositorio
+      - name: Descargar repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Instalar Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Instalar librerías
         run: pip install requests pandas openpyxl
 
-      - name: Ejecutar IA
+      - name: Ejecutar bot
         run: python predicciones.py
