@@ -1,115 +1,138 @@
 import requests
-import pandas as pd
-import random
+import os
+from datetime import datetime
 
-# -------------------------
-# TELEGRAM
-# -------------------------
+API_KEY = os.environ["ODDS_API_KEY"]
+TOKEN = os.environ["TELEGRAM_TOKEN"]
+CHAT_ID = os.environ["CHAT_ID"]
 
-TOKEN = "8752521307:AAGT9Tq3dvkDKWOhWxbGkezM3YmnlxfeNrI"
-CHAT_ID = "7049565102"
-
-# -------------------------
-# LIGAS A ANALIZAR
-# -------------------------
-
-ligas = {
-    "Premier League": "4328",
-    "La Liga": "4335",
-    "Bundesliga": "4331",
-    "Ligue 1": "4334"
+sports = {
+"Premier League":"soccer_epl",
+"La Liga":"soccer_spain_la_liga",
+"Serie A":"soccer_italy_serie_a",
+"Bundesliga":"soccer_germany_bundesliga",
+"Champions":"soccer_uefa_champs_league"
 }
 
-resultados = []
+fuertes=[]
+medios=[]
+otros=[]
 
-print("INICIANDO ANALISIS\n")
+for liga,sport in sports.items():
 
-# -------------------------
-# ANALISIS DE PARTIDOS
-# -------------------------
+    url=f"https://api.the-odds-api.com/v4/sports/{sport}/odds/?apiKey={API_KEY}&regions=eu&markets=h2h,totals,btts"
 
-for liga, id_liga in ligas.items():
+    r=requests.get(url)
 
-    print(f"Analizando {liga}")
+    if r.status_code!=200:
+        continue
 
-    url = f"https://www.thesportsdb.com/api/v1/json/3/eventsnextleague.php?id={id_liga}"
+    data=r.json()
 
-    r = requests.get(url)
-    data = r.json()
+    for match in data:
 
-    if data["events"]:
+        home=match["home_team"]
+        away=match["away_team"]
 
-        for partido in data["events"]:
+        fecha=datetime.fromisoformat(
+        match["commence_time"].replace("Z","")
+        ).strftime("%d-%m-%Y %H:%M")
 
-            local = partido["strHomeTeam"]
-            visitante = partido["strAwayTeam"]
-            fecha = partido["dateEvent"]
+        cuotas_home=[]
+        cuotas_away=[]
+        cuotas_over=[]
+        cuotas_btts=[]
 
-            prob_local = random.randint(40,65)
-            prob_visita = random.randint(20,40)
-            prob_empate = 100 - prob_local - prob_visita
+        try:
+            for b in match["bookmakers"]:
+                for m in b["markets"]:
 
-            cuota_local = round(random.uniform(1.8,3.5),2)
+                    if m["key"]=="h2h":
+                        for o in m["outcomes"]:
+                            if o["name"]==home:
+                                cuotas_home.append(o["price"])
+                            if o["name"]==away:
+                                cuotas_away.append(o["price"])
 
-            value = int(prob_local - (100/cuota_local))
+                    if m["key"]=="totals":
+                        for o in m["outcomes"]:
+                            if o["name"]=="Over":
+                                cuotas_over.append(o["price"])
 
-            resultados.append({
-                "Liga": liga,
-                "Fecha": fecha,
-                "Local": local,
-                "Visitante": visitante,
-                "Local %": prob_local,
-                "Empate %": prob_empate,
-                "Visitante %": prob_visita,
-                "Cuota Local": cuota_local,
-                "Value Local": value
-            })
+                    if m["key"]=="btts":
+                        for o in m["outcomes"]:
+                            if o["name"]=="Yes":
+                                cuotas_btts.append(o["price"])
+        except:
+            continue
 
-# -------------------------
-# DATAFRAME
-# -------------------------
+        if len(cuotas_home)==0 or len(cuotas_away)==0:
+            continue
 
-df = pd.DataFrame(resultados)
+        media_home=sum(cuotas_home)/len(cuotas_home)
+        media_away=sum(cuotas_away)/len(cuotas_away)
 
-print("\nPARTIDOS ANALIZADOS\n")
-print(df)
+        if media_home < media_away:
+            favorito=home
+            cuota_fav=media_home
+        else:
+            favorito=away
+            cuota_fav=media_away
 
-# -------------------------
-# GUARDAR EXCEL
-# -------------------------
+        prob=round(100/cuota_fav)
 
-nombre_excel = "predicciones.xlsx"
-df.to_excel(nombre_excel,index=False)
+        recomendacion=None
 
-print(f"\nExcel guardado: {nombre_excel}")
+        if len(cuotas_over)>0:
+            media_over=sum(cuotas_over)/len(cuotas_over)
+            if media_over<1.60:
+                recomendacion="Habrá más de 2.5 goles"
 
-# -------------------------
-# TOP APUESTAS
-# -------------------------
+        if recomendacion is None and len(cuotas_btts)>0:
+            media_btts=sum(cuotas_btts)/len(cuotas_btts)
+            if media_btts<1.70:
+                recomendacion="Ambos equipos marcarán"
 
-top10 = df.sort_values("Value Local",ascending=False).head(10)
+        if recomendacion is None:
+            recomendacion=f"Gana {favorito}"
 
-print("\nTOP APUESTAS\n")
-print(top10)
+        info=(liga,home,away,fecha,favorito,prob,recomendacion)
 
-# -------------------------
-# MENSAJE TELEGRAM
-# -------------------------
+        if cuota_fav<1.50:
+            fuertes.append(info)
 
-mensaje = "⚽ TOP 10 APUESTAS DEL DIA\n\n"
+        elif cuota_fav<1.75:
+            medios.append(info)
 
-for i,row in top10.iterrows():
+        else:
+            otros.append(info)
 
-    mensaje += f"{row['Local']} vs {row['Visitante']}\n"
-    mensaje += f"{row['Local']} gana: {row['Local %']}%\n"
-    mensaje += f"{row['Visitante']} gana: {row['Visitante %']}%\n"
-    mensaje += "Over 1.5 goles\n\n"
+mensaje="⚽ IA APUESTAS DEL DIA\n\n"
 
-url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+if len(fuertes)==0 and len(medios)==0 and len(otros)==0:
 
-requests.post(url,data={
-"chat_id":CHAT_ID,
-"text":mensaje
-})
+    mensaje+="⚠️ NO SE ENCONTRARON PARTIDOS CON DATOS HOY\n"
 
-print("\nMensaje enviado a Telegram")
+else:
+
+    if fuertes:
+        mensaje+="🔥 APUESTAS MUY FUERTES\n\n"
+        for f in fuertes[:3]:
+            mensaje+=f"{f[0]}\n{f[1]} vs {f[2]}\n📅 {f[3]}\nFavorito: {f[4]}\nProbabilidad ganar: {f[5]}%\nRecomendación: {f[6]}\n\n"
+
+    if medios:
+        mensaje+="⭐ APUESTAS NIVEL MEDIO\n\n"
+        for m in medios[:3]:
+            mensaje+=f"{m[0]}\n{m[1]} vs {m[2]}\n📅 {m[3]}\nFavorito: {m[4]}\nProbabilidad ganar: {m[5]}%\nRecomendación: {m[6]}\n\n"
+
+    if not fuertes and not medios and otros:
+        mensaje+="📊 PARTIDOS ANALIZADOS\n\n"
+        for o in otros[:5]:
+            mensaje+=f"{o[0]}\n{o[1]} vs {o[2]}\n📅 {o[3]}\nFavorito: {o[4]} {o[5]}%\n\n"
+
+requests.post(
+f"https://api.telegram.org/bot{TOKEN}/sendMessage",
+data={"chat_id":CHAT_ID,"text":mensaje}
+)
+
+print("BOT EJECUTADO OK")
